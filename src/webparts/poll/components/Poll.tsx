@@ -4,6 +4,8 @@ import { IPollProps } from './IPollProps';
 import { escape } from '@microsoft/sp-lodash-subset';
 import { Web } from 'sp-pnp-js';
 import { ChoiceGroup, IChoiceGroupOption } from 'office-ui-fabric-react/lib/ChoiceGroup';
+import { Placeholder } from '@pnp/spfx-controls-react/lib/Placeholder';
+import { DefaultButton } from 'office-ui-fabric-react/lib/Button';
 
 export interface IPollState {
   list: string;
@@ -13,6 +15,7 @@ export interface IPollState {
   selectedVote: string;
   errorOccured: boolean;
   errorMessage: string;
+  renderHolder: boolean;
 }
 
 
@@ -27,10 +30,12 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
       pollData: [],
       selectedVote: undefined,
       errorOccured: false,
-      errorMessage: undefined
-    }
+      errorMessage: undefined,
+      renderHolder: true
+    };
   }
 
+  // tslint:disable-next-line:member-access
   componentDidMount() {
 
     if (!(this.state.list && this.state.option && this.state.votes)) {
@@ -51,12 +56,17 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
 
   protected createDateForState = async (listData: any[]) => {
     await this.setState({
-      pollData: listData
+      pollData: listData,
+      renderHolder: false
     });
   }
 
+  // tslint:disable-next-line:member-access
   componentWillReceiveProps(nextProps: IPollProps) {
     if (nextProps.list !== this.props.list || nextProps.pollResult !== this.props.pollResult || nextProps.pollOption !== this.props.pollOption) {
+      this.setState({
+        renderHolder: true
+      });
       if (nextProps.list && nextProps.pollResult && nextProps.pollOption) {
         this.setState({
           list: nextProps.list,
@@ -82,7 +92,7 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
         'odata-version': ''
       }
     }).select(...selectParams).get()
-      .then(p => p).catch((reject: any) => reject)
+      .then(p => p).catch((reject: any) => reject);
 
     return data;
   }
@@ -107,11 +117,46 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
     });
   }
 
+  protected _voteClickedHandler = async () => {
+    let pollData: any[] = [...this.state.pollData];
+    let dataSetToBeModified = pollData.filter(el => el["Id"] === parseInt(this.state.selectedVote, 0));
+
+    if (dataSetToBeModified.length > 0) {
+      let idToBeModified = dataSetToBeModified[0]["Id"];
+      let currentValue: any = dataSetToBeModified[0][this.state.votes];
+      if (isNaN(parseInt(currentValue, 0))) {
+        currentValue = 0;
+      }
+      else {
+        currentValue = parseInt(currentValue, 0) + 1;
+      }
+
+      //Handle Condition if the Field is of type Text or Number
+      let valueToBeUpdated = {};
+      valueToBeUpdated[this.state.votes] = currentValue.toString();
+
+      const web = new Web(this.props.webURL);
+      await web.lists.getById(this.state.list).items.getById(parseInt(idToBeModified, 0)).update(valueToBeUpdated).then(i => { console.log(i); }).catch(error => { console.log(error); });
+    }
+    else {
+      //Cause Error
+    }
+  }
 
   public render(): React.ReactElement<IPollProps> {
+    // const renderController : JSX.Element = this.state.renderHolder ? ;
+
     return (
       <div className={styles.poll}>
+        <header>{this.props.pollTitle}</header>
         <ChoiceGroup options={this.createChoiceOptions()} onChanged={this._onChange}></ChoiceGroup>
+        <DefaultButton
+          primary={true}
+          data-automation-id="test"
+          disabled={this.state.selectedVote ? false : true}
+          text="Vote"
+          onClick={this._voteClickedHandler}
+        />
       </div>
     );
   }

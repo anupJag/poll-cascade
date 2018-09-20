@@ -58,9 +58,9 @@ export default class PollWebPart extends BaseClientSideWebPart<IPollWebPartProps
     return Version.parse('1.0');
   }
 
-  protected get disableReactivePropertyChanges(): boolean {
-    return true;
-  }
+  // protected get disableReactivePropertyChanges(): boolean {
+  //   return true;
+  // }
 
   protected getColumnsForPropertyPane = (): Promise<any[]> => {
 
@@ -70,7 +70,7 @@ export default class PollWebPart extends BaseClientSideWebPart<IPollWebPartProps
     }
 
     return new Promise<any[]>((resolve: (columns: any[]) => void, reject: (error: any) => void) => {
-      this.context.spHttpClient.get(`${this.context.pageContext.web.absoluteUrl}/_api/web/lists/getbyid('${this.properties.list}')/fields/?$filter=((Hidden eq false) and (ReadOnlyField eq false) and ((FieldTypeKind eq 2) or (FieldTypeKind ne 9)))`, SPHttpClient.configurations.v1, {
+      this.context.spHttpClient.get(`${this.context.pageContext.web.absoluteUrl}/_api/web/lists/getbyid('${this.properties.list}')/fields/?$filter=((Hidden eq false) and (ReadOnlyField eq false) and (FieldTypeKind ne 19) and (FieldTypeKind ne 12) and ((FieldTypeKind eq 2) or (FieldTypeKind ne 9) or (FieldTypeKind ne 1)))`, SPHttpClient.configurations.v1, {
         headers: {
           'Accept': 'application/json;odata=nometadata',
           'odata-version': ''
@@ -104,11 +104,12 @@ export default class PollWebPart extends BaseClientSideWebPart<IPollWebPartProps
     this.getColumnsForPropertyPane()
       .then((columns: any[]): void => {
         var columnsRequired: IDropdownOption[] = [];
-        columnsRequired.push();
+        columnsRequired.push({ key: null, text: null, selected: true });
         columns.forEach((element) => {
           columnsRequired.push({
             key: element.InternalName,
             text: element.Title,
+            selected: false
           });
         });
         this._ListColumns = columnsRequired;
@@ -117,9 +118,9 @@ export default class PollWebPart extends BaseClientSideWebPart<IPollWebPartProps
         this.context.statusRenderer.clearLoadingIndicator(this.domElement);
       }).then(() => {
         let listColumnsTemp: IDropdownOption[] = [];
-        listColumnsTemp.push();
+        listColumnsTemp.push({ key: null, text: null, selected: true });
         this._ListColumns.forEach((element: IDropdownOption) => {
-          if (element.key !== this.properties.pollOption) {
+          if (element.key !== this.properties.pollOption && element.key !== null) {
             listColumnsTemp.push(element);
           }
         });
@@ -195,6 +196,7 @@ export default class PollWebPart extends BaseClientSideWebPart<IPollWebPartProps
       this._PollResultSelection = false;
       this.context.statusRenderer.clearLoadingIndicator(this.domElement);
       this.context.propertyPane.refresh();
+      this.render();
     }
     else {
       super.onPropertyPaneFieldChanged(propertyPath, oldValue, newValue);
@@ -214,11 +216,10 @@ export default class PollWebPart extends BaseClientSideWebPart<IPollWebPartProps
       pages: [
         {
           header: {
-            description: strings.PropertyPaneDescription
+            description: "Configure your Poll Title, and select the List where you wish to record the Poll."
           },
           groups: [
             {
-              groupName: strings.BasicGroupName,
               groupFields: [
                 PropertyPaneTextField('pollTitle', {
                   label: "Poll Title",
@@ -241,12 +242,14 @@ export default class PollWebPart extends BaseClientSideWebPart<IPollWebPartProps
                 PropertyPaneDropdown('pollOption', {
                   label: "Select the field for your Poll Options",
                   options: this._ListColumns,
-                  disabled: this._PollOptionSelection
+                  disabled: this._PollOptionSelection,
+                  selectedKey: null                 
                 }),
                 PropertyPaneDropdown('pollResult', {
                   label: "Select the field to store the votes",
                   options: this._ResultColumns,
-                  disabled: this._PollResultSelection
+                  disabled: this._PollResultSelection,
+                  selectedKey: null
                 }),
               ]
             }
