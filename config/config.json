@@ -1,0 +1,19 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/config.2.0.schema.json",
+  "version": "2.0",
+  "bundles": {
+    "poll-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/poll/PollWebPart.js",
+          "manifest": "./src/webparts/poll/PollWebPart.manifest.json"
+        }
+      ]
+    }
+  },
+  "externals": {},
+  "localizedResources": {
+    "PollWebPartStrings": "lib/webparts/poll/loc/{locale}.js",
+    "PropertyControlStrings": "node_modules/@pnp/spfx-property-controls/lib/loc/{locale}.js"
+  }
+}
