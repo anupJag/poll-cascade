@@ -18,7 +18,7 @@ const results = (props: IResultsProps) => {
             <div>
                 {
                     props.votingOptions.map((el : IResultProps) => {
-                        return <Result title={el.title} votes={el.votes} percentage={el.percentage}/>
+                        return <Result title={el.title} votes={el.votes} percentage={el.percentage}/>;
                     })
                 }
             </div>
@@ -27,6 +27,6 @@ const results = (props: IResultsProps) => {
             </div>
         </div>
     );
-}
+};
 
 export default results;

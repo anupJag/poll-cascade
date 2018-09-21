@@ -26,6 +26,6 @@ const result = (props : IResultProps) => {
             </div>
         </div>
     );
-}
+};
 
 export default result;

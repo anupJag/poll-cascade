@@ -163,7 +163,7 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
         shouldSubmitButtonDisabled: !prevState.shouldSubmitButtonDisabled,
         shouldResultsBeDisabled: !prevState.shouldResultsBeDisabled,
         showSpinner: !prevState.showSpinner
-      }
+      };
     });
     let pollData: any[] = [...this.state.pollData];
     let dataSetToBeModified = pollData.filter(el => el["Id"] === parseInt(this.state.selectedVote, 0));
@@ -210,7 +210,7 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
           return {
             showSpinner: !prevState.showSpinner,
             renderResult: !prevState.renderResult
-          }
+          };
         });
       });
     }
@@ -232,7 +232,7 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
       var individualVoteCount = element[this.state.votes];
 
       if (isNaN(parseInt(individualVoteCount, 0))) {
-        individualVoteCount = 0
+        individualVoteCount = 0;
       }
       else {
         individualVoteCount = parseInt(individualVoteCount, 0);
@@ -249,8 +249,8 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
     this.setState((prevState: IPollState) => {
       return {
         renderResult: !prevState.renderResult
-      }
-    })
+      };
+    });
   }
 
   public render(): React.ReactElement<IPollProps> {
@@ -284,7 +284,7 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
             onClick={this._showResultsHandler}
           />
         </div>
-      </div>
+      </div>;
 
     const showSpinner: JSX.Element = this.state.showSpinner ?
       <div className={styles.spinnerMainHolder}>

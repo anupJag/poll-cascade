@@ -5,11 +5,7 @@ import { IMainProps } from './IPollProps';
 
 export default class Main extends React.Component<IMainProps, {}>{
 
-    state = {
-        showPlaceHolder: false
-    }
-
-    render(): React.ReactElement<IMainProps> {
+    public render(): React.ReactElement<IMainProps> {
 
         const { pollTitle, list, pollResult, pollOption } = this.props;
         const renderPlaceHolder: JSX.Element = !(pollTitle && list && pollResult && pollOption) ?
@@ -27,7 +23,7 @@ export default class Main extends React.Component<IMainProps, {}>{
                 pollResult={pollResult}
                 pollTitle={pollTitle}
                 webURL={this.props.webURL}
-            />
+            />;
 
         return (
             <div>
