@@ -1,11 +1,12 @@
 import * as React from 'react';
 import styles from './Poll.module.scss';
-import { IPollProps } from './IPollProps';
+import { IPollProps, IFieldTypeKind, FieldType } from './IPollProps';
 import { escape } from '@microsoft/sp-lodash-subset';
 import { Web } from 'sp-pnp-js';
 import { ChoiceGroup, IChoiceGroupOption } from 'office-ui-fabric-react/lib/ChoiceGroup';
 import { Placeholder } from '@pnp/spfx-controls-react/lib/Placeholder';
 import { DefaultButton } from 'office-ui-fabric-react/lib/Button';
+import { IColumnDataStructure } from '../PollWebPart';
 
 export interface IPollState {
   list: string;
@@ -16,6 +17,7 @@ export interface IPollState {
   errorOccured: boolean;
   errorMessage: string;
   renderHolder: boolean;
+  columnDataStructure: IColumnDataStructure[];
 }
 
 
@@ -31,7 +33,8 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
       selectedVote: undefined,
       errorOccured: false,
       errorMessage: undefined,
-      renderHolder: true
+      renderHolder: true,
+      columnDataStructure: props.columnDataStructure,
     };
   }
 
@@ -71,7 +74,8 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
         this.setState({
           list: nextProps.list,
           option: nextProps.pollOption,
-          votes: nextProps.pollResult
+          votes: nextProps.pollResult,
+          columnDataStructure: nextProps.columnDataStructure
         }, () => {
           this.getExisitingListData()
             .then((listData: any[]) => {
@@ -79,6 +83,8 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
             });
         });
       }
+
+      console.log(this.props.columnDataStructure);
     }
   }
 
@@ -122,20 +128,39 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
     let dataSetToBeModified = pollData.filter(el => el["Id"] === parseInt(this.state.selectedVote, 0));
 
     if (dataSetToBeModified.length > 0) {
+      const web = new Web(this.props.webURL);
       let idToBeModified = dataSetToBeModified[0]["Id"];
       let currentValue: any = dataSetToBeModified[0][this.state.votes];
       if (isNaN(parseInt(currentValue, 0))) {
-        currentValue = 0;
+        currentValue = 1;
       }
       else {
         currentValue = parseInt(currentValue, 0) + 1;
       }
 
       //Handle Condition if the Field is of type Text or Number
-      let valueToBeUpdated = {};
-      valueToBeUpdated[this.state.votes] = currentValue.toString();
+      const dataType: IFieldTypeKind = await web.lists.getById(this.state.list).fields.getByInternalNameOrTitle(this.state.votes).select("FieldTypeKind").configure({
+        headers: {
+          'Accept': 'application/json;odata=nometadata',
+          'odata-version': ''
+        }
+      }).get().then(p => p);
 
-      const web = new Web(this.props.webURL);
+      switch (dataType.FieldTypeKind) {
+        case FieldType.Text:
+          currentValue = currentValue.toString();
+          break;
+
+        default:
+          currentValue = currentValue;
+          break;
+      }
+
+
+      let valueToBeUpdated = {};
+      valueToBeUpdated[this.state.votes] = currentValue;
+
+
       await web.lists.getById(this.state.list).items.getById(parseInt(idToBeModified, 0)).update(valueToBeUpdated).then(i => { console.log(i); }).catch(error => { console.log(error); });
     }
     else {

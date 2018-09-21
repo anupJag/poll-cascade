@@ -28,12 +28,18 @@ export interface IListColumnOptions {
   text: string;
 }
 
+export interface IColumnDataStructure {
+  InternalName: string;
+  FieldTypeKind: number;
+}
+
 export default class PollWebPart extends BaseClientSideWebPart<IPollWebPartProps> {
 
   private _ListColumns: any[];
   private _ResultColumns: any[];
   private _PollOptionSelection: boolean = true;
   private _PollResultSelection: boolean = true;
+  private _ColumnDataStructure: IColumnDataStructure[];
 
   public render(): void {
     const element: React.ReactElement<IPollProps> = React.createElement(
@@ -43,13 +49,14 @@ export default class PollWebPart extends BaseClientSideWebPart<IPollWebPartProps
         list: this.properties.list,
         pollOption: this.properties.pollOption,
         pollResult: this.properties.pollResult,
-        webURL: this.context.pageContext.web.absoluteUrl
+        webURL: this.context.pageContext.web.absoluteUrl,
+        columnDataStructure : this._ColumnDataStructure
       }
     );
 
     ReactDom.render(element, this.domElement);
   }
-
+ 
   protected onDispose(): void {
     ReactDom.unmountComponentAtNode(this.domElement);
   }
@@ -58,9 +65,9 @@ export default class PollWebPart extends BaseClientSideWebPart<IPollWebPartProps
     return Version.parse('1.0');
   }
 
-  // protected get disableReactivePropertyChanges(): boolean {
-  //   return true;
-  // }
+  protected get disableReactivePropertyChanges(): boolean {
+    return true;
+  }
 
   protected getColumnsForPropertyPane = (): Promise<any[]> => {
 
@@ -70,7 +77,7 @@ export default class PollWebPart extends BaseClientSideWebPart<IPollWebPartProps
     }
 
     return new Promise<any[]>((resolve: (columns: any[]) => void, reject: (error: any) => void) => {
-      this.context.spHttpClient.get(`${this.context.pageContext.web.absoluteUrl}/_api/web/lists/getbyid('${this.properties.list}')/fields/?$filter=((Hidden eq false) and (ReadOnlyField eq false) and (FieldTypeKind ne 19) and (FieldTypeKind ne 12) and ((FieldTypeKind eq 2) or (FieldTypeKind ne 9) or (FieldTypeKind ne 1)))`, SPHttpClient.configurations.v1, {
+      this.context.spHttpClient.get(`${this.context.pageContext.web.absoluteUrl}/_api/web/lists/getbyid('${this.properties.list}')/fields/?$filter=((Hidden eq false) and (ReadOnlyField eq false) and (FieldTypeKind ne 19) and (FieldTypeKind ne 12) and ((FieldTypeKind eq 2) or (FieldTypeKind eq 9) or (FieldTypeKind eq 1)))`, SPHttpClient.configurations.v1, {
         headers: {
           'Accept': 'application/json;odata=nometadata',
           'odata-version': ''
@@ -104,14 +111,20 @@ export default class PollWebPart extends BaseClientSideWebPart<IPollWebPartProps
     this.getColumnsForPropertyPane()
       .then((columns: any[]): void => {
         var columnsRequired: IDropdownOption[] = [];
+        var columnDataStructureTemp : IColumnDataStructure[] = [];
         columnsRequired.push({ key: null, text: null, selected: true });
         columns.forEach((element) => {
+          columnDataStructureTemp.push({
+            InternalName: element.InternalName,
+            FieldTypeKind: element.FieldTypeKind
+          });
           columnsRequired.push({
             key: element.InternalName,
             text: element.Title,
             selected: false
           });
         });
+        this._ColumnDataStructure = columnDataStructureTemp;
         this._ListColumns = columnsRequired;
         this._PollOptionSelection = !this.properties.list;
         this.context.propertyPane.refresh();
@@ -157,14 +170,20 @@ export default class PollWebPart extends BaseClientSideWebPart<IPollWebPartProps
 
       this.getColumnsForPropertyPane().then((columns: any[]): void => {
         var columnsRequired: IDropdownOption[] = [];
+        var columnDataStructureTemp : IColumnDataStructure[] = [];
         columnsRequired.push({ key: null, text: null, selected: true });
         columns.forEach((element) => {
+          columnDataStructureTemp.push({
+            InternalName: element.InternalName,
+            FieldTypeKind: element.FieldTypeKind
+          });
           columnsRequired.push({
             key: element.InternalName,
             text: element.Title,
-            selected : false
+            selected: false
           });
         });
+        this._ColumnDataStructure = columnDataStructureTemp;
         this._ListColumns = columnsRequired;
         this._PollOptionSelection = false;
         this.context.statusRenderer.clearLoadingIndicator(this.domElement);
@@ -188,7 +207,7 @@ export default class PollWebPart extends BaseClientSideWebPart<IPollWebPartProps
           listColumnsTemp.push({
             key: element.key,
             text: element.text,
-            selected : false 
+            selected: false
           });
         }
       });
@@ -243,7 +262,7 @@ export default class PollWebPart extends BaseClientSideWebPart<IPollWebPartProps
                   label: "Select the field for your Poll Options",
                   options: this._ListColumns,
                   disabled: this._PollOptionSelection,
-                  selectedKey: null                 
+                  selectedKey: null
                 }),
                 PropertyPaneDropdown('pollResult', {
                   label: "Select the field to store the votes",
