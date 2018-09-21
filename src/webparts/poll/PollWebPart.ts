@@ -12,8 +12,8 @@ import { SPHttpClient, SPHttpClientResponse } from '@microsoft/sp-http';
 import { PropertyFieldListPicker, PropertyFieldListPickerOrderBy } from '@pnp/spfx-property-controls/lib/PropertyFieldListPicker';
 import * as strings from 'PollWebPartStrings';
 
-import Poll from './components/Poll';
-import { IPollProps } from './components/IPollProps';
+import Main from './components/Main';
+import { IMainProps } from './components/IPollProps';
 import { IDropdownOption } from 'office-ui-fabric-react/lib/Dropdown';
 
 export interface IPollWebPartProps {
@@ -39,24 +39,29 @@ export default class PollWebPart extends BaseClientSideWebPart<IPollWebPartProps
   private _ResultColumns: any[];
   private _PollOptionSelection: boolean = true;
   private _PollResultSelection: boolean = true;
-  private _ColumnDataStructure: IColumnDataStructure[];
 
   public render(): void {
-    const element: React.ReactElement<IPollProps> = React.createElement(
-      Poll,
+    const element: React.ReactElement<IMainProps> = React.createElement(
+      Main,
       {
         pollTitle: this.properties.pollTitle,
         list: this.properties.list,
         pollOption: this.properties.pollOption,
         pollResult: this.properties.pollResult,
         webURL: this.context.pageContext.web.absoluteUrl,
-        columnDataStructure : this._ColumnDataStructure
+        _onConfigure : this._onConfigure.bind(this)
       }
     );
 
     ReactDom.render(element, this.domElement);
   }
  
+
+  private _onConfigure() {
+    // Context of the web part
+    this.context.propertyPane.open();
+  }
+
   protected onDispose(): void {
     ReactDom.unmountComponentAtNode(this.domElement);
   }
@@ -124,7 +129,6 @@ export default class PollWebPart extends BaseClientSideWebPart<IPollWebPartProps
             selected: false
           });
         });
-        this._ColumnDataStructure = columnDataStructureTemp;
         this._ListColumns = columnsRequired;
         this._PollOptionSelection = !this.properties.list;
         this.context.propertyPane.refresh();
@@ -183,7 +187,6 @@ export default class PollWebPart extends BaseClientSideWebPart<IPollWebPartProps
             selected: false
           });
         });
-        this._ColumnDataStructure = columnDataStructureTemp;
         this._ListColumns = columnsRequired;
         this._PollOptionSelection = false;
         this.context.statusRenderer.clearLoadingIndicator(this.domElement);

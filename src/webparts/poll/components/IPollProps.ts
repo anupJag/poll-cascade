@@ -6,9 +6,17 @@ export interface IPollProps {
   pollOption: string;
   pollResult: string;
   webURL: string;
-  columnDataStructure : IColumnDataStructure[];
 }
 
+
+export interface IMainProps{
+  pollTitle: string;
+  list: string;
+  pollOption: string;
+  pollResult: string;
+  webURL: string;  
+  _onConfigure: () => void;
+}
 
 export interface IFieldTypeKind{
   FieldTypeKind: number;

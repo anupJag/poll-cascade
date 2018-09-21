@@ -4,9 +4,10 @@ import { IPollProps, IFieldTypeKind, FieldType } from './IPollProps';
 import { escape } from '@microsoft/sp-lodash-subset';
 import { Web } from 'sp-pnp-js';
 import { ChoiceGroup, IChoiceGroupOption } from 'office-ui-fabric-react/lib/ChoiceGroup';
-import { Placeholder } from '@pnp/spfx-controls-react/lib/Placeholder';
 import { DefaultButton } from 'office-ui-fabric-react/lib/Button';
-import { IColumnDataStructure } from '../PollWebPart';
+import Results from './Results/Results';
+import { IResultProps } from './Results/Result/Result';
+import { Spinner, SpinnerSize } from 'office-ui-fabric-react/lib/Spinner';
 
 export interface IPollState {
   list: string;
@@ -16,8 +17,11 @@ export interface IPollState {
   selectedVote: string;
   errorOccured: boolean;
   errorMessage: string;
-  renderHolder: boolean;
-  columnDataStructure: IColumnDataStructure[];
+  renderResult: boolean;
+  resultSet: IResultProps[];
+  showSpinner: boolean;
+  shouldSubmitButtonDisabled: boolean;
+  shouldResultsBeDisabled: boolean;
 }
 
 
@@ -33,8 +37,11 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
       selectedVote: undefined,
       errorOccured: false,
       errorMessage: undefined,
-      renderHolder: true,
-      columnDataStructure: props.columnDataStructure,
+      renderResult: false,
+      resultSet: undefined,
+      showSpinner: false,
+      shouldSubmitButtonDisabled: true,
+      shouldResultsBeDisabled: false,
     };
   }
 
@@ -60,22 +67,17 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
   protected createDateForState = async (listData: any[]) => {
     await this.setState({
       pollData: listData,
-      renderHolder: false
     });
   }
 
   // tslint:disable-next-line:member-access
   componentWillReceiveProps(nextProps: IPollProps) {
     if (nextProps.list !== this.props.list || nextProps.pollResult !== this.props.pollResult || nextProps.pollOption !== this.props.pollOption) {
-      this.setState({
-        renderHolder: true
-      });
       if (nextProps.list && nextProps.pollResult && nextProps.pollOption) {
         this.setState({
           list: nextProps.list,
           option: nextProps.pollOption,
           votes: nextProps.pollResult,
-          columnDataStructure: nextProps.columnDataStructure
         }, () => {
           this.getExisitingListData()
             .then((listData: any[]) => {
@@ -83,11 +85,40 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
             });
         });
       }
-
-      console.log(this.props.columnDataStructure);
     }
   }
 
+  protected createChartData = (): IResultProps[] => {
+    let tempResult: IResultProps[] = [];
+    let currentPollData = [...this.state.pollData];
+
+    if (!(currentPollData && currentPollData.length > 0)) {
+      return tempResult;
+    }
+
+    const totalVotes: number = this.getTotalVotes();
+
+    currentPollData.forEach((element) => {
+      let votes: number = isNaN(parseInt(element[this.state.votes], 0)) ? 0 : parseInt(element[this.state.votes], 0);
+      let percentage: number = 0;
+      if (votes === 0 || totalVotes === 0) {
+        percentage = 0;
+      }
+      else {
+        percentage = (votes / totalVotes) * 100;
+        percentage = parseFloat(percentage.toFixed(2));
+      }
+
+
+      tempResult.push({
+        title: element[this.state.option],
+        votes: isNaN(element[this.state.votes]) || element[this.state.votes] === null || element[this.state.votes] === undefined ? 0 : element[this.state.votes],
+        percentage: percentage
+      });
+    });
+
+    return tempResult;
+  }
 
   protected getExisitingListData = async () => {
     const web = new Web(this.props.webURL);
@@ -118,12 +149,22 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
   }
 
   protected _onChange = (option: IChoiceGroupOption, ev: React.FormEvent<HTMLInputElement>): void => {
-    this.setState({
-      selectedVote: option.key
+    this.setState((prevState: IPollState) => {
+      return {
+        selectedVote: option.key,
+        shouldSubmitButtonDisabled: !prevState.shouldSubmitButtonDisabled
+      };
     });
   }
 
   protected _voteClickedHandler = async () => {
+    this.setState((prevState: IPollState) => {
+      return {
+        shouldSubmitButtonDisabled: !prevState.shouldSubmitButtonDisabled,
+        shouldResultsBeDisabled: !prevState.shouldResultsBeDisabled,
+        showSpinner: !prevState.showSpinner
+      }
+    });
     let pollData: any[] = [...this.state.pollData];
     let dataSetToBeModified = pollData.filter(el => el["Id"] === parseInt(this.state.selectedVote, 0));
 
@@ -160,28 +201,106 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
       let valueToBeUpdated = {};
       valueToBeUpdated[this.state.votes] = currentValue;
 
-
       await web.lists.getById(this.state.list).items.getById(parseInt(idToBeModified, 0)).update(valueToBeUpdated).then(i => { console.log(i); }).catch(error => { console.log(error); });
+
+      this.getExisitingListData().then((listData: any[]) => {
+        this.createDateForState(listData);
+      }).then(() => {
+        this.setState((prevState: IPollState) => {
+          return {
+            showSpinner: !prevState.showSpinner,
+            renderResult: !prevState.renderResult
+          }
+        });
+      });
     }
     else {
       //Cause Error
     }
   }
 
+  protected getTotalVotes = (): number => {
+    let currentPollData = [...this.state.pollData];
+
+    if (!(currentPollData && currentPollData.length > 0)) {
+      return 0;
+    }
+
+    let sum = 0;
+
+    currentPollData.forEach((element) => {
+      var individualVoteCount = element[this.state.votes];
+
+      if (isNaN(parseInt(individualVoteCount, 0))) {
+        individualVoteCount = 0
+      }
+      else {
+        individualVoteCount = parseInt(individualVoteCount, 0);
+      }
+
+      sum = sum + individualVoteCount;
+
+    });
+
+    return sum;
+  }
+
+  protected _showResultsHandler = () => {
+    this.setState((prevState: IPollState) => {
+      return {
+        renderResult: !prevState.renderResult
+      }
+    })
+  }
+
   public render(): React.ReactElement<IPollProps> {
-    // const renderController : JSX.Element = this.state.renderHolder ? ;
+    const showResults: JSX.Element = this.state.renderResult ?
+      <Results
+        pollTitle={this.props.pollTitle}
+        votingOptions={this.createChartData()}
+        totalVotes={this.getTotalVotes()}
+      /> :
+      <div>
+        <header className={styles.title}>{this.props.pollTitle}</header>
+        <ChoiceGroup
+          options={this.createChoiceOptions()}
+          onChanged={this._onChange}
+        >
+        </ChoiceGroup>
+        <div className={styles.buttonControls}>
+          <DefaultButton
+            primary={true}
+            data-automation-id="test"
+            disabled={this.state.shouldSubmitButtonDisabled}
+            text="Vote"
+            onClick={this._voteClickedHandler}
+          />
+          <DefaultButton
+            style={{ marginLeft: "2em" }}
+            primary={true}
+            data-automation-id="test"
+            text="See what's trending"
+            disabled={this.state.shouldResultsBeDisabled}
+            onClick={this._showResultsHandler}
+          />
+        </div>
+      </div>
+
+    const showSpinner: JSX.Element = this.state.showSpinner ?
+      <div className={styles.spinnerMainHolder}>
+        <div className={styles.spinnerHolder}>
+          <Spinner
+            size={SpinnerSize.large}
+            label="Thank You For Your Valuable Contribution"
+            style={{ zIndex: 100 }}
+          />
+        </div>
+      </div> : null;
 
     return (
       <div className={styles.poll}>
-        <header>{this.props.pollTitle}</header>
-        <ChoiceGroup options={this.createChoiceOptions()} onChanged={this._onChange}></ChoiceGroup>
-        <DefaultButton
-          primary={true}
-          data-automation-id="test"
-          disabled={this.state.selectedVote ? false : true}
-          text="Vote"
-          onClick={this._voteClickedHandler}
-        />
+        {showSpinner}
+        {showResults}
       </div>
     );
   }

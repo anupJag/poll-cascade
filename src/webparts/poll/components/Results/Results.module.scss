@@ -1,0 +1,14 @@
+@import '~@microsoft/sp-office-ui-fabric-core/dist/sass/SPFabricCore.scss';
+
+.resultsMain{
+
+    .header{
+        @include ms-font-xl;
+        text-align: center;
+    }
+
+    .footer{
+        @include ms-font-l;
+        text-align: center;
+    }
+}

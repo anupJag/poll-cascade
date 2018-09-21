@@ -1,0 +1,27 @@
+@import '~@microsoft/sp-office-ui-fabric-core/dist/sass/SPFabricCore.scss';
+
+.resultHolder{
+
+    .resultLabel{
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+    }
+
+    .resultBarHolder{
+        width: 100%;
+        height: 20px;
+        border: 2px solid #ccc;
+        background-color: rgba(255, 206, 200, 0.3);
+        margin-bottom: 1.2em;
+
+        .resultProgress{
+            height: inherit;
+            border: none;
+            background-color: $ms-color-themeDark;
+            opacity: 0.9;
+        }
+
+    }
+
+}
