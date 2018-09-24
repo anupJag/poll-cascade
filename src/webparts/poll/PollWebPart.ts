@@ -55,7 +55,7 @@ export default class PollWebPart extends BaseClientSideWebPart<IPollWebPartProps
       if (this.properties.pollDataCollection && this.properties.pollDataCollection.length > 0) {
         //Reach out to the web and create the list items
         let tempPollOption: IPollData[] = [];
-        const pollID = this.properties.guid
+        const pollID = this.properties.guid;
         this.properties.pollDataCollection.forEach((poll: IPollOption) => {
           tempPollOption.push({
             Title: poll.option,

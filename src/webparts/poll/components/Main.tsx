@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Placeholder } from '@pnp/spfx-controls-react/lib/Placeholder';
 import Poll from './Poll';
 import { IMainProps } from './IPollProps';
+import { escape } from '@microsoft/sp-lodash-subset';
 
 export default class Main extends React.Component<IMainProps, {}>{
 
@@ -20,7 +21,7 @@ export default class Main extends React.Component<IMainProps, {}>{
             <Poll
                 pollGUID={pollGUID}
                 pollListGUID={this.props.pollListGUID}
-                pollTitle={pollTitle}
+                pollTitle={escape(pollTitle)}
                 webURL={this.props.webURL}
             />;
 
