@@ -4,7 +4,12 @@
 
     .header{
         @include ms-font-xl;
-        text-align: center;
+        display: flex;
+        flex-direction: row;
+
+        .title{
+            margin: auto;
+        }
     }
 
     .footer{

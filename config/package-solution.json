@@ -5,7 +5,22 @@
     "id": "aa62565c-4778-40f7-a2f4-059ad7f8435c",
     "version": "1.0.0.0",
     "includeClientSideAssets": true,
-    "skipFeatureDeployment": true
+    "features": [
+      {
+        "title": "react-poll-solution-client-side-solution",
+        "description": "Poll Webpart solution will allow you to create quick polls",
+        "id": "3085E9BF-6386-4446-BC07-2B22B589FEDC",
+        "version": "1.0.0.0",
+        "assets": {
+          "elementManifests": [
+            "elements.xml"
+          ],
+          "elementFiles": [
+            "schema.xml"
+          ]
+        }
+      }
+    ]
   },
   "paths": {
     "zippedPackage": "solution/react-poll-solution.sppkg"

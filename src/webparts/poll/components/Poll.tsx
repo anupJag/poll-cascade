@@ -1,6 +1,6 @@
 import * as React from 'react';
 import styles from './Poll.module.scss';
-import { IPollProps, IFieldTypeKind, FieldType } from './IPollProps';
+import { IPollProps, IFieldTypeKind, FieldNames } from './IPollProps';
 import { escape } from '@microsoft/sp-lodash-subset';
 import { Web } from 'sp-pnp-js';
 import { ChoiceGroup, IChoiceGroupOption } from 'office-ui-fabric-react/lib/ChoiceGroup';
@@ -10,9 +10,8 @@ import { IResultProps } from './Results/Result/Result';
 import { Spinner, SpinnerSize } from 'office-ui-fabric-react/lib/Spinner';
 
 export interface IPollState {
-  list: string;
-  option: string;
-  votes: string;
+  listGUID: string;
+  pollGUID : string;
   pollData: any[];
   selectedVote: string;
   errorOccured: boolean;
@@ -30,9 +29,8 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
   constructor(props: IPollProps) {
     super(props);
     this.state = {
-      list: props.list,
-      option: props.pollOption,
-      votes: props.pollResult,
+      listGUID: props.pollListGUID,
+      pollGUID : props.pollGUID,
       pollData: [],
       selectedVote: undefined,
       errorOccured: false,
@@ -47,12 +45,7 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
 
   // tslint:disable-next-line:member-access
   componentDidMount() {
-
-    if (!(this.state.list && this.state.option && this.state.votes)) {
-      return;
-    }
-
-    this.getExisitingListData()
+    this.listData()
       .then((listData: any[]) => {
         this.createDateForState(listData);
       }).catch((error: any) => {
@@ -70,24 +63,6 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
     });
   }
 
-  // tslint:disable-next-line:member-access
-  componentWillReceiveProps(nextProps: IPollProps) {
-    if (nextProps.list !== this.props.list || nextProps.pollResult !== this.props.pollResult || nextProps.pollOption !== this.props.pollOption) {
-      if (nextProps.list && nextProps.pollResult && nextProps.pollOption) {
-        this.setState({
-          list: nextProps.list,
-          option: nextProps.pollOption,
-          votes: nextProps.pollResult,
-        }, () => {
-          this.getExisitingListData()
-            .then((listData: any[]) => {
-              this.createDateForState(listData);
-            });
-        });
-      }
-    }
-  }
-
   protected createChartData = (): IResultProps[] => {
     let tempResult: IResultProps[] = [];
     let currentPollData = [...this.state.pollData];
@@ -99,7 +74,7 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
     const totalVotes: number = this.getTotalVotes();
 
     currentPollData.forEach((element) => {
-      let votes: number = isNaN(parseInt(element[this.state.votes], 0)) ? 0 : parseInt(element[this.state.votes], 0);
+      let votes: number = isNaN(parseInt(element[FieldNames.Votes], 0)) ? 0 : parseInt(element[FieldNames.Votes], 0);
       let percentage: number = 0;
       if (votes === 0 || totalVotes === 0) {
         percentage = 0;
@@ -111,8 +86,8 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
 
 
       tempResult.push({
-        title: element[this.state.option],
-        votes: isNaN(element[this.state.votes]) || element[this.state.votes] === null || element[this.state.votes] === undefined ? 0 : element[this.state.votes],
+        title: element[FieldNames.Title],
+        votes: isNaN(element[FieldNames.Votes]) || element[FieldNames.Votes] === null || element[FieldNames.Votes] === undefined ? 0 : element[FieldNames.Votes],
         percentage: percentage
       });
     });
@@ -120,15 +95,15 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
     return tempResult;
   }
 
-  protected getExisitingListData = async () => {
+  protected listData = async () => {
     const web = new Web(this.props.webURL);
-    const selectParams = ["Id", this.state.option, this.state.votes];
-    const data = await web.lists.getById(this.state.list).items.configure({
+    const selectParams = [FieldNames.Id, FieldNames.Title, FieldNames.Votes, FieldNames.PollID];
+    const data = await web.lists.getById(this.state.listGUID).items.configure({
       headers: {
         'Accept': 'application/json;odata=nometadata',
         'odata-version': ''
       }
-    }).select(...selectParams).get()
+    }).select(...selectParams).filter("PollID eq '" + this.state.pollGUID + "'").get()
       .then(p => p).catch((reject: any) => reject);
 
     return data;
@@ -140,8 +115,8 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
       const data = [...this.state.pollData];
       data.forEach((element: IChoiceGroupOption) => {
         choiceGroupToBeReturned.push({
-          key: element["ID"].toString(),
-          text: element[this.props.pollOption].toString()
+          key: element[FieldNames.Id].toString(),
+          text: element[FieldNames.Title].toString()
         });
       });
     }
@@ -166,12 +141,12 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
       };
     });
     let pollData: any[] = [...this.state.pollData];
-    let dataSetToBeModified = pollData.filter(el => el["Id"] === parseInt(this.state.selectedVote, 0));
+    let dataSetToBeModified = pollData.filter(el => el[FieldNames.Id] === parseInt(this.state.selectedVote, 0));
 
     if (dataSetToBeModified.length > 0) {
       const web = new Web(this.props.webURL);
-      let idToBeModified = dataSetToBeModified[0]["Id"];
-      let currentValue: any = dataSetToBeModified[0][this.state.votes];
+      let idToBeModified = dataSetToBeModified[0][FieldNames.Id];
+      let currentValue: any = dataSetToBeModified[0][FieldNames.Votes];
       if (isNaN(parseInt(currentValue, 0))) {
         currentValue = 1;
       }
@@ -179,31 +154,12 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
         currentValue = parseInt(currentValue, 0) + 1;
       }
 
-      //Handle Condition if the Field is of type Text or Number
-      const dataType: IFieldTypeKind = await web.lists.getById(this.state.list).fields.getByInternalNameOrTitle(this.state.votes).select("FieldTypeKind").configure({
-        headers: {
-          'Accept': 'application/json;odata=nometadata',
-          'odata-version': ''
-        }
-      }).get().then(p => p);
-
-      switch (dataType.FieldTypeKind) {
-        case FieldType.Text:
-          currentValue = currentValue.toString();
-          break;
-
-        default:
-          currentValue = currentValue;
-          break;
-      }
-
-
       let valueToBeUpdated = {};
-      valueToBeUpdated[this.state.votes] = currentValue;
+      valueToBeUpdated[FieldNames.Votes] = currentValue;
 
-      await web.lists.getById(this.state.list).items.getById(parseInt(idToBeModified, 0)).update(valueToBeUpdated).then(i => { console.log(i); }).catch(error => { console.log(error); });
+      await web.lists.getById(this.state.listGUID).items.getById(parseInt(idToBeModified, 0)).update(valueToBeUpdated).then(i => { console.log(i); }).catch(error => { console.log(error); });
 
-      this.getExisitingListData().then((listData: any[]) => {
+      this.listData().then((listData: any[]) => {
         this.createDateForState(listData);
       }).then(() => {
         this.setState((prevState: IPollState) => {
@@ -229,7 +185,7 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
     let sum = 0;
 
     currentPollData.forEach((element) => {
-      var individualVoteCount = element[this.state.votes];
+      var individualVoteCount = element[FieldNames.Votes];
 
       if (isNaN(parseInt(individualVoteCount, 0))) {
         individualVoteCount = 0;
@@ -248,7 +204,8 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
   protected _showResultsHandler = () => {
     this.setState((prevState: IPollState) => {
       return {
-        renderResult: !prevState.renderResult
+        renderResult: !prevState.renderResult,
+        shouldResultsBeDisabled: !prevState.shouldResultsBeDisabled,
       };
     });
   }
@@ -259,6 +216,7 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
         pollTitle={this.props.pollTitle}
         votingOptions={this.createChartData()}
         totalVotes={this.getTotalVotes()}
+        backButtonClicked={this._showResultsHandler.bind(this)}
       /> :
       <div>
         <header className={styles.title}>{this.props.pollTitle}</header>
@@ -279,7 +237,7 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
             style={{ marginLeft: "2em" }}
             primary={true}
             data-automation-id="test"
-            text="See what's trending"
+            text="Poll Results"
             disabled={this.state.shouldResultsBeDisabled}
             onClick={this._showResultsHandler}
           />

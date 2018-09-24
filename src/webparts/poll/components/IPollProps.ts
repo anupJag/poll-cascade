@@ -1,29 +1,38 @@
-import { IColumnDataStructure } from '../PollWebPart';
-
 export interface IPollProps {
   pollTitle: string;
-  list: string;
-  pollOption: string;
-  pollResult: string;
+  pollGUID: string;
+  pollListGUID: string;
   webURL: string;
 }
 
 
-export interface IMainProps{
+export interface IPollOption {
+  option: string;
+}
+
+export interface IPollData {
+  Title: string;
+  Votes: number;
+  PollID: string;
+}
+
+
+export interface IMainProps {
   pollTitle: string;
-  list: string;
-  pollOption: string;
-  pollResult: string;
-  webURL: string;  
+  pollGUID: string;
+  pollListGUID: string;
+  webURL: string;
+  pollSetupCompleted: boolean;
   _onConfigure: () => void;
 }
 
-export interface IFieldTypeKind{
+export interface IFieldTypeKind {
   FieldTypeKind: number;
 }
 
-export enum FieldType{
-  Integer = 1,
-  Text = 2,
-  Number = 9
+export enum FieldNames {
+  Id = "Id",
+  Title = "Title",
+  Votes = "Votes",
+  PollID = "PollID"
 }

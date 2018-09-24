@@ -7,8 +7,8 @@ export default class Main extends React.Component<IMainProps, {}>{
 
     public render(): React.ReactElement<IMainProps> {
 
-        const { pollTitle, list, pollResult, pollOption } = this.props;
-        const renderPlaceHolder: JSX.Element = !(pollTitle && list && pollResult && pollOption) ?
+        const { pollTitle, pollGUID, pollSetupCompleted } = this.props;
+        const renderPlaceHolder: JSX.Element = (pollSetupCompleted === undefined || pollSetupCompleted === false) ?
             <Placeholder
                 iconName='CheckboxComposite'
                 iconText='Poll'
@@ -18,9 +18,8 @@ export default class Main extends React.Component<IMainProps, {}>{
             />
             :
             <Poll
-                list={list}
-                pollOption={pollOption}
-                pollResult={pollResult}
+                pollGUID={pollGUID}
+                pollListGUID={this.props.pollListGUID}
                 pollTitle={pollTitle}
                 webURL={this.props.webURL}
             />;
