@@ -8,10 +8,11 @@ import { DefaultButton } from 'office-ui-fabric-react/lib/Button';
 import Results from './Results/Results';
 import { IResultProps } from './Results/Result/Result';
 import { Spinner, SpinnerSize } from 'office-ui-fabric-react/lib/Spinner';
+import Error from './Error/Error';
 
 export interface IPollState {
   listGUID: string;
-  pollGUID : string;
+  pollGUID: string;
   pollData: any[];
   selectedVote: string;
   errorOccured: boolean;
@@ -30,7 +31,7 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
     super(props);
     this.state = {
       listGUID: props.pollListGUID,
-      pollGUID : props.pollGUID,
+      pollGUID: props.pollGUID,
       pollData: [],
       selectedVote: undefined,
       errorOccured: false,
@@ -124,10 +125,17 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
   }
 
   protected _onChange = (option: IChoiceGroupOption, ev: React.FormEvent<HTMLInputElement>): void => {
+
+    let submitbuttonCheck: boolean = this.state.shouldSubmitButtonDisabled;
+
+    if (option.key) {
+      submitbuttonCheck = false;
+    }
+
     this.setState((prevState: IPollState) => {
       return {
         selectedVote: option.key,
-        shouldSubmitButtonDisabled: !prevState.shouldSubmitButtonDisabled
+        shouldSubmitButtonDisabled: submitbuttonCheck
       };
     });
   }
@@ -157,7 +165,21 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
       let valueToBeUpdated = {};
       valueToBeUpdated[FieldNames.Votes] = currentValue;
 
-      await web.lists.getById(this.state.listGUID).items.getById(parseInt(idToBeModified, 0)).update(valueToBeUpdated).then(i => { console.log(i); }).catch(error => { console.log(error); });
+      await web.lists.getById(this.state.listGUID).items.getById(parseInt(idToBeModified, 0)).update(valueToBeUpdated).then(i => { console.log(i); })
+        .catch((error: any) => {
+          if (error.status === 403) {
+            this.setState({
+              errorOccured: true,
+              errorMessage: "Only Site Members are allowed to Contribute"
+            });
+          }
+          else {
+            this.setState({
+              errorOccured: true,
+              errorMessage: error.message
+            });
+          }
+        });
 
       this.listData().then((listData: any[]) => {
         this.createDateForState(listData);
@@ -165,7 +187,8 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
         this.setState((prevState: IPollState) => {
           return {
             showSpinner: !prevState.showSpinner,
-            renderResult: !prevState.renderResult
+            renderResult: !prevState.renderResult,
+            selectedVote: undefined
           };
         });
       });
@@ -223,6 +246,7 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
         <ChoiceGroup
           options={this.createChoiceOptions()}
           onChanged={this._onChange}
+          selectedKey={this.state.selectedVote}
         >
         </ChoiceGroup>
         <div className={styles.buttonControls}>
@@ -258,7 +282,9 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
     return (
       <div className={styles.poll}>
         {showSpinner}
-        {showResults}
+        {
+          this.state.errorOccured ? <Error ErrorText={this.state.errorMessage} /> : showResults
+        }
       </div>
     );
   }
