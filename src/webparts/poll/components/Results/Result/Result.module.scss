@@ -1,5 +1,9 @@
 @import '~@microsoft/sp-office-ui-fabric-core/dist/sass/SPFabricCore.scss';
 
+@keyframes animate-stripes {
+    0% {background-position: 0 0;} 100% {background-position: 60px 0;}
+}
+
 .resultHolder{
 
     .resultLabel{
@@ -19,6 +23,9 @@
             height: inherit;
             border: none;
             background-color: $ms-color-themeDark;
+            background-image: linear-gradient(135deg, rgba(255, 255, 255, .15) 25%, transparent 25%,transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%,transparent 75%, transparent);
+            background-size: 30px 30px;
+            animation: animate-stripes 3s linear infinite;
             opacity: 0.9;
         }
 

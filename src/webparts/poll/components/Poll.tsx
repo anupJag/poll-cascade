@@ -234,6 +234,15 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
   }
 
   public render(): React.ReactElement<IPollProps> {
+
+    const showSpinner: JSX.Element = this.state.showSpinner ?
+      <div className={styles.spinnerHolder}>
+        <Spinner
+          size={SpinnerSize.small}
+        />
+      </div>
+      : null;
+
     const showResults: JSX.Element = this.state.renderResult ?
       <Results
         pollTitle={this.props.pollTitle}
@@ -247,6 +256,7 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
           options={this.createChoiceOptions()}
           onChanged={this._onChange}
           selectedKey={this.state.selectedVote}
+          disabled={this.state.showSpinner}
         >
         </ChoiceGroup>
         <div className={styles.buttonControls}>
@@ -266,22 +276,13 @@ export default class Poll extends React.Component<IPollProps, IPollState> {
             onClick={this._showResultsHandler}
           />
         </div>
+        {showSpinner}
       </div>;
 
-    const showSpinner: JSX.Element = this.state.showSpinner ?
-      <div className={styles.spinnerMainHolder}>
-        <div className={styles.spinnerHolder}>
-          <Spinner
-            size={SpinnerSize.large}
-            label="Thank You For Your Valuable Contribution"
-            style={{ zIndex: 100 }}
-          />
-        </div>
-      </div> : null;
+
 
     return (
       <div className={styles.poll}>
-        {showSpinner}
         {
           this.state.errorOccured ? <Error ErrorText={this.state.errorMessage} /> : showResults
         }
